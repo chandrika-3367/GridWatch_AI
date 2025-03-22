@@ -1,0 +1,34 @@
+[
+    {
+        "Timestamp": "2025-03-18 08:00:00",
+        "Meter_ID": "MTR3000",
+        "Energy_Consumed_kWh": 0.0,
+        "Voltage_V": 230.0,
+        "Current_A": 0.0,
+        "Note": "Meter tampering suspected"
+    },
+    {
+        "Timestamp": "2025-03-18 09:00:00",
+        "Meter_ID": "MTR3001",
+        "Energy_Consumed_kWh": 200.0,
+        "Voltage_V": 180.0,
+        "Current_A": 50.0,
+        "Note": "Sudden surge"
+    },
+    {
+        "Timestamp": "2025-03-18 10:00:00",
+        "Meter_ID": "MTR3002",
+        "Energy_Consumed_kWh": 0.0,
+        "Voltage_V": 240.0,
+        "Current_A": 0.0,
+        "Note": "Possible bypass"
+    },
+    {
+        "Timestamp": "2025-03-18 11:00:00",
+        "Meter_ID": "MTR3003",
+        "Energy_Consumed_kWh": 500.0,
+        "Voltage_V": 250.0,
+        "Current_A": 80.0,
+        "Note": "Overload"
+    }
+]

@@ -1,0 +1,5 @@
+Timestamp,Meter_ID,Energy_Consumed_kWh,Voltage_V,Current_A,Note
+2025-03-18 08:00:00,MTR3000,0.0,230.0,0.0,Meter tampering suspected
+2025-03-18 09:00:00,MTR3001,200.0,180.0,50.0,Sudden surge
+2025-03-18 10:00:00,MTR3002,0.0,240.0,0.0,Possible bypass
+2025-03-18 11:00:00,MTR3003,500.0,250.0,80.0,Overload

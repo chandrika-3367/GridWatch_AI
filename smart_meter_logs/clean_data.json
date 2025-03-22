@@ -1,0 +1,30 @@
+[
+    {
+        "Timestamp": "2025-03-18 08:00:00",
+        "Meter_ID": "MTR1000",
+        "Energy_Consumed_kWh": 10.0,
+        "Voltage_V": 230.0,
+        "Current_A": 5.0
+    },
+    {
+        "Timestamp": "2025-03-18 09:00:00",
+        "Meter_ID": "MTR1001",
+        "Energy_Consumed_kWh": 15.0,
+        "Voltage_V": 220.0,
+        "Current_A": 6.0
+    },
+    {
+        "Timestamp": "2025-03-18 10:00:00",
+        "Meter_ID": "MTR1002",
+        "Energy_Consumed_kWh": 12.0,
+        "Voltage_V": 235.0,
+        "Current_A": 5.5
+    },
+    {
+        "Timestamp": "2025-03-18 11:00:00",
+        "Meter_ID": "MTR1003",
+        "Energy_Consumed_kWh": 14.0,
+        "Voltage_V": 240.0,
+        "Current_A": 6.0
+    }
+]
