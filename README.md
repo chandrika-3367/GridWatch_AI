@@ -1,35 +1,37 @@
 # GridWatch AI
 
-> **AI-Powered Smart Meter Fraud Detection using RAG (Retrieval-Augmented Generation)**
+> **AI-Powered Smart Meter Fraud Detection using RAG + ML Analysis**
 
-GridWatch AI is an innovative tool that uses AI to detect fraudulent energy usage patterns through smart meters. By leveraging document-based case studies, it enables proactive detection and visualization of energy theft while suggesting actionable insights.
+GridWatch AI is an advanced fraud detection system that leverages document-based insights through Retrieval-Augmented Generation (RAG) and real-time smart meter data via AI and Machine Learning (ML). It identifies anomalies, predicts fraudulent activity, and helps utilities ensure energy integrity through smart analytics and actionable reports.
 
 ---
 
 ## Features
 
-- **Summarize Smart Meter Data** – Quickly summarize patterns and anomalies from uploaded logs or datasets.
-- **Search Case Studies (RAG)** – Retrieve relevant insights from embedded fraud-related case studies.
-- **Visualize KPIs** – Traffic metrics, energy usage trends, and potential fraud spikes.
-- **Preventive Suggestions** – Context-aware recommendations to prevent energy theft.
-- **Auto-Ticket Generation** – Raise automated complaints or reports when fraud patterns are detected.
+- **Smart Log Parsing & Analysis** – Upload diverse log files and dynamically extract structured data using rule-based and LLM-based fallback parsers.
+- **Chat with GridWatch AI** – Interact via AI chat powered by RAG (for case studies) or LLM (for log-specific queries).
+- **Visualize Metrics** – KPI analysis, anomaly detection, geospatial fraud mapping, and downloadable reports.
+- **AI-Based Fraud Detection** – ML model flags fraudulent patterns, compares with visual analysis, and provides confidence scores.
+- **Auto-Ticket Generation** – Raise fraud tickets with a mock API integration; download acknowledgment reports.
+- **Actionable Insights** – Compare visual vs ML fraud detection; take targeted actions.
 
 ---
 
 ## Tech Stack
 
-| Component       | Technology Used                                       |
-|----------------|------------------------------------------------------|
-| **Frontend**    | Streamlit                                            |
-| **Backend**     | Python, Flask                                        |
-| **Embedding**   | HuggingFace Embeddings (all-MiniLM-L6-v2)            |
-| **Vector DB**   | ChromaDB                                             |
-| **RAG Engine**  | LangChain                                            |
-| **LLM (Optional)**| Groq (GPT-compatible) or OpenAI                    |
+| Component         | Technology Used                                       |
+|------------------|------------------------------------------------------|
+| **Frontend**     | Streamlit                                            |
+| **Backend**      | Python (Pandas, Plotly, PyMuPDF, LangChain)          |
+| **Embedding**    | HuggingFace Embeddings (all-MiniLM-L6-v2)            |
+| **Vector DB**    | ChromaDB                                             |
+| **RAG Engine**   | LangChain                                            |
+| **LLM**          | Groq (OpenAI-compatible endpoint)                    |
+| **ML Module**    | Custom fraud detection model (RFC)                   |
 
 ---
 
-##  Setup Instructions
+## Setup Instructions
 
 ### 1. Clone the Repository
 ```bash
@@ -49,7 +51,7 @@ Place your fraud-related PDF case studies in the `case_studies/` folder.
 ```bash
 python Scripts/chunk_and_embed.py
 ```
-> This will split the documents, create embeddings, and store them in a persistent ChromaDB.
+> This splits documents, creates embeddings, and stores them in ChromaDB.
 
 ### 5. Run the App
 ```bash
@@ -58,30 +60,30 @@ streamlit run app/main.py
 
 ---
 
-##  Usage Overview
+## Updated Usage Overview
 
-1. Upload energy usage logs or select pre-existing records.
-2. Interact via chatbot to summarize or inquire about suspicious patterns.
-3. View suggested actions and visualize fraud metrics.
-4. Automatically generate reports or tickets based on fraud indicators.
+1. Upload logs (TXT, CSV, JSON, PDF, DOCX, XLSX) and parse dynamically.
+2. Visualize metrics (KPI trends, anomalies, fraud mapping).
+3. **NEW:** Click "Detect Fraud Using AI" to trigger ML analysis.
+4. Compare ML fraud detection with visual anomalies.
+5. Generate tickets and download reports.
+
 
 ---
 
 ## Acknowledgements
-- HuggingFace for open embeddings.
-- LangChain for seamless RAG integrations.
-- ChromaDB for efficient vector storage.
+- HuggingFace for embeddings.
+- LangChain and ChromaDB for RAG pipelines.
+- Groq for blazing-fast LLM access.
 
 ---
 
 ## Project Status
-GridWatch AI has been successfully developed and deployed with the following completed milestones:
+GridWatch AI is live with:
 
-- PDF-based case studies ingestion and embedding
-- Persistent vector storage via ChromaDB
-- AI-powered summarization and visualization modules
-- Fraud detection logic and ticket generation
-- Fully functional Streamlit UI for user interaction
-
-
+- RAG + LLM dual-mode chat
+- Real-time log parsing and analysis
+- ML-powered fraud detection module
+- Dynamic UI with fraud reporting and AI insights
+- Mock ticket API integration
 
