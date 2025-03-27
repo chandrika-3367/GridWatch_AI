@@ -14,10 +14,7 @@ GridWatch AI is an advanced fraud detection system that leverages document-based
 ✅ **AI-Based Fraud Detection** – ML model **flags fraudulent patterns**, compares with visual analysis, and provides **confidence scores**.\
 ✅ **Auto-Ticket Generation** – **Raise fraud tickets with a mock API integration; download acknowledgment reports**.\
 ✅ **Actionable Insights** – Compare **visual vs ML fraud detection**; take **targeted actions**.\
-✅ **Utility Bill Intelligence** – **Extract billing details, compare rate plans, and analyze energy usage patterns**.\
-✅ **Smart Alert Thresholds** – **Proactively detect fraud and receive real-time energy alerts**.\
-✅ **Energy Theft Heatmaps** – **Geospatial analysis of fraud-prone areas with predictive insights**.\
-✅ **ML Training & Model Adaptation** – **Train models with uploaded datasets and dynamically adapt to different fraud patterns**.
+
 
 ---
 
@@ -77,9 +74,7 @@ streamlit run app/main.py
 ✔ **NEW: Click "Detect Fraud Using AI" to trigger ML analysis.**\
 ✔ **Compare ML fraud detection with visual anomalies.**\
 ✔ **Generate tickets and download reports.**\
-✔ **NEW: Train ML models using uploaded datasets & analyze predictions.**\
-✔ **NEW: AI-assisted energy bill analysis and plan switching recommendations.**\
-✔ **NEW: Smart alert thresholds and geospatial fraud risk heatmaps.**
+
 
 ---
 
@@ -104,3 +99,9 @@ GridWatch AI is **live and operational** with:
 📄 **Mock ticket API integration for reporting fraud cases.**
 
 ---
+## **Enhancements that are coming up!**
+
+✅ **Utility Bill Intelligence** – **Extract billing details, compare rate plans, and analyze energy usage patterns**.\
+✅ **Smart Alert Thresholds** – **Proactively detect fraud and receive real-time energy alerts**.\
+✅ **Energy Theft Heatmaps** – **Geospatial analysis of fraud-prone areas with predictive insights**.\
+✅ **ML Training & Model Adaptation** – **Train models with uploaded datasets and dynamically adapt to different fraud patterns**.
