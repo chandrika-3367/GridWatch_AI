@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import json
 import pandas as pd
@@ -13,19 +14,15 @@ groq_api_key = os.getenv("GROQ_API_KEY")
 
 DEFAULT_KPIS = ["Energy_Consumed_kWh", "Voltage_V", "Current_A"]
 
-# Preview block
-
 
 def preview_log_content(content, label):
     st.text_area(f"{label} Preview", content, height=300)
-
-# Robust parsing logic
 
 
 def robust_parse_text_to_df(text):
     records = []
     lines = text.strip().splitlines()
-    for i, line in enumerate(lines):
+    for line in lines:
         line = line.strip()
         if not line:
             continue
@@ -34,20 +31,16 @@ def robust_parse_text_to_df(text):
                 "\u2019", "'").replace("\u201c", '"').replace("\u201d", '"')
             clean_line = clean_line.replace(
                 '\u00A0', ' ').replace('“', '"').replace('”', '"')
-
             try:
                 record = ast.literal_eval(clean_line.rstrip(','))
             except:
                 json_line = clean_line.replace("'", '"')
                 record = json.loads(json_line)
-
             if isinstance(record, dict):
                 records.append(record)
         except Exception:
             continue
     return pd.DataFrame(records) if records else None
-
-# Fallback LLM parsing via Groq API
 
 
 def fallback_llm_parse(text):
@@ -59,35 +52,73 @@ def fallback_llm_parse(text):
 
         client = Groq(api_key=groq_api_key)
 
-        prompt = f"""
-        You are an expert data parser. Extract structured tabular data from the following smart meter logs. 
-        Return the output as a JSON array of objects with the following fields: 
-        Timestamp (ISO format), Meter_ID (string), Energy_Consumed_kWh (number), Voltage_V (number), Current_A (number), Note (optional string). 
-        Ensure numeric fields are numbers (not strings), and Timestamp is formatted as YYYY-MM-DD HH:MM:SS. Only return valid entries in JSON format. No explanation needed.
+        bill_keywords = ["account number", "billing period",
+                         "meter id", "total usage", "charges", "bill date"]
+        is_bill = any(kw in text.lower() for kw in bill_keywords)
 
-        Logs:
-        ```
-        {text}
-        ```
-        """
+        if is_bill:
+            prompt = f"""
+            Extract the following details from the utility bill text:
+            - Account Number
+            - Meter ID
+            - Billing Period or Dates
+            - Meter Readings (initial/final)
+            - Total Energy Consumption (kWh)
+            - Total Charges or Cost
+
+            Format the output as valid JSON with double quotes. Example:
+            {{
+            "Account_Number": "123456",
+            "Meter_ID": "MTR001",
+            "Billing_Period": "2025-02-01 to 2025-02-28",
+            "Usage_kWh": 234.56,
+            "Total_Charges": "$54.23"
+            }}
+
+            Bill Text:
+            ```
+            {text[:2000]}
+            ```
+            """
+        else:
+            prompt = f"""
+            You are an expert data parser. Extract structured tabular data from the following smart meter logs. 
+            Return the output as a JSON array of objects with the following fields: 
+            Timestamp (ISO format), Meter_ID (string), Energy_Consumed_kWh (number), Voltage_V (number), Current_A (number), Note (optional string). 
+            Ensure numeric fields are numbers (not strings), and Timestamp is formatted as YYYY-MM-DD HH:MM:SS. Only return valid entries in JSON format. No explanation needed.
+
+            Logs:
+            ```
+            {text[:2000]}
+            ```
+            """
 
         chat_completion = client.chat.completions.create(
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
+            messages=[{"role": "user", "content": prompt}],
             model="llama3-70b-8192"
         )
 
         llm_output = chat_completion.choices[0].message.content.strip()
-        parsed_json = json.loads(llm_output)
 
-        return pd.DataFrame(parsed_json)
+        json_match = re.search(r'\{.*\}|\[.*\]', llm_output, re.DOTALL)
+        if json_match:
+            json_text = json_match.group().replace("'", '"')
+            parsed_json = json.loads(json_text)
+
+            if isinstance(parsed_json, list):
+                return pd.DataFrame(parsed_json)
+            elif isinstance(parsed_json, dict):
+                return pd.DataFrame([parsed_json])
+            else:
+                st.error("Unexpected response format from LLM.")
+                return None
+        else:
+            st.error("No JSON-like content found in LLM response.")
+            return None
 
     except Exception as e:
         st.error(f"LLM fallback failed: {str(e)}")
         return None
-
-# Sending the prompt
 
 
 def summarize_logs_with_ai(df):
@@ -111,9 +142,7 @@ def summarize_logs_with_ai(df):
     with st.spinner("\u2728 Generating AI-powered summary..."):
         try:
             chat_completion = client.chat.completions.create(
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
+                messages=[{"role": "user", "content": prompt}],
                 model="llama3-70b-8192"
             )
             ai_summary = chat_completion.choices[0].message.content.strip()
@@ -121,8 +150,6 @@ def summarize_logs_with_ai(df):
             st.write(ai_summary)
         except Exception as e:
             st.error(f"AI summarization failed: {str(e)}")
-
-# Implementing the functionalities
 
 
 def analyze_log_content(df):
@@ -138,27 +165,25 @@ def analyze_log_content(df):
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
-        if st.button("Preview Logs"):
+        if st.button("Preview"):
             st.session_state.action = 'preview'
 
     with col2:
-        if st.button("Analyze Logs"):
+        if st.button("Analyze"):
             st.session_state.action = 'analyze'
 
     with col3:
-        if st.button("Summarize Logs"):
+        if st.button("Summarize"):
             st.session_state.action = 'summarize'
 
     with col4:
-        if st.button("Ask AI About Logs"):
-            st.session_state['analyzed_df'] = df.copy()
+        if st.button("Ask GridWatchAI"):
             st.session_state['log_context_available'] = True
             st.session_state['active_tab'] = "Chat with GridWatch AI"
             st.rerun()
 
     with col5:
-        if st.button("Visualize Logs"):
-            st.session_state['analyzed_df'] = df.copy()
+        if st.button("Visualize"):
             st.session_state['active_tab'] = "Visualize Metrics"
             st.rerun()
 
@@ -182,15 +207,18 @@ def analyze_log_content(df):
     elif st.session_state.action == 'summarize':
         summarize_logs_with_ai(df)
 
-# Streamlit UI logic
-
 
 def log_upload_tab():
     st.subheader("Upload Logs for Analysis")
-    uploaded_file = st.file_uploader("Choose log file", type=[
-                                     "txt", "csv", "json", "log", "pdf", "docx"])
+    uploaded_files = st.file_uploader("Choose log files", type=[
+                                      "txt", "csv", "json", "log", "pdf", "docx"], accept_multiple_files=True)
 
-    if uploaded_file:
+    if not uploaded_files:
+        return
+
+    all_data = []
+
+    for uploaded_file in uploaded_files:
         file_type = uploaded_file.name.split(".")[-1].lower()
 
         df = None
@@ -226,24 +254,27 @@ def log_upload_tab():
                     df = fallback_llm_parse(text)
             else:
                 st.error("Unsupported file type.")
-                return
+                continue
 
             if df is not None and not df.empty:
-                analyze_log_content(df)
-            else:
-                st.error("Failed to parse file or no valid data found.")
+                all_data.append(df)
 
         except Exception as e:
             st.warning(
-                f"Initial parsing failed. Attempting LLM fallback... Error: {str(e)}")
+                f"Parsing failed for {uploaded_file.name}. Attempting LLM fallback... Error: {str(e)}")
             try:
                 uploaded_file.seek(0)
                 content = uploaded_file.read().decode("utf-8")
                 df = fallback_llm_parse(content)
                 if df is not None and not df.empty:
-                    analyze_log_content(df)
+                    all_data.append(df)
                 else:
-                    st.error(
-                        "LLM parsing also failed. Please check your file format.")
+                    st.error(f"LLM parsing failed for {uploaded_file.name}.")
             except Exception as ee:
-                st.error(f"LLM parsing final error: {str(ee)}")
+                st.error(f"Final parsing error: {str(ee)}")
+
+    if all_data:
+        combined_df = pd.concat(all_data, ignore_index=True)
+        analyze_log_content(combined_df)
+    else:
+        st.error("No valid data found in uploaded files.")

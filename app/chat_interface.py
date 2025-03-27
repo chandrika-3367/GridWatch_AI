@@ -1,112 +1,114 @@
 import streamlit as st
+import pandas as pd
+import plotly.express as px
+import numpy as np
 import json
-from groq import Groq
+import uuid
+import requests
+import re
 import os
 from dotenv import load_dotenv
-import pandas as pd
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain_openai import ChatOpenAI
 
-# Load environment variables
+# Setup
 load_dotenv()
 groq_api_key = os.getenv("GROQ_API_KEY")
-
-# Initialize embedding and vector DB for RAG
 embedding_function = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-persist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../db"))
-vectordb = Chroma(persist_directory=persist_dir,
-                  embedding_function=embedding_function)
-retriever = vectordb.as_retriever(search_kwargs={"k": 3})
-
 llm_rag = ChatOpenAI(
     model="llama3-70b-8192",
     base_url="https://api.groq.com/openai/v1",
     api_key=groq_api_key,
     temperature=0
 )
-qa_chain = RetrievalQA.from_chain_type(llm=llm_rag, retriever=retriever)
-
-# Direct LLM for logs
-client = Groq(api_key=groq_api_key)
-
-# Enhanced chat tab with RAG + LLM switch
 
 
 def chat_tab():
     st.markdown("""
-    Ask questions about energy theft, smart meter patterns, or anomalies in uploaded logs.
-    Example: *"What anomalies were detected in the uploaded logs?"*
+    Ask questions about energy theft, smart meter patterns, or recommendations from your utility bill.
     """)
 
     logs_df = st.session_state.get("analyzed_df")
+    bill_data = st.session_state.get("bill_context")
 
-    if logs_df is not None and not logs_df.empty:
-        prompt_prefill = "e.g., What anomalies can be found in the uploaded logs?"
-    else:
-        prompt_prefill = "e.g., How to detect reverse meter tampering?"
+    if logs_df is not None and not logs_df.empty and not bill_data:
+        from groq import Groq
+        client = Groq(api_key=groq_api_key)
+        sample = logs_df.head(1).to_dict(orient="records")[0]
+        prompt = f"The following data is extracted from a utility bill:\n{json.dumps(sample, indent=2)}\n..."
+        try:
+            result = client.chat.completions.create(
+                model="llama3-70b-8192",
+                messages=[{"role": "user", "content": prompt}]
+            ).choices[0].message.content.strip()
+            json_match = re.search(r'{.*}', result, re.DOTALL)
+            if json_match:
+                try:
+                    st.session_state.bill_context = json.loads(
+                        json_match.group())
+                except json.JSONDecodeError:
+                    st.session_state.bill_context = json.loads(
+                        json_match.group().replace("'", '"'))
+        except:
+            pass
+        bill_data = st.session_state.bill_context
 
+    prompt_prefill = "e.g., What anomalies are shown in the uploaded logs? | What is the cancellation fee for my provider? | What are the signs of meter tampering?"
     query = st.text_input("Ask GridWatch AI:", placeholder=prompt_prefill)
 
-    use_log_context = logs_df is not None and not logs_df.empty and "uploaded logs" in query.lower()
+    use_bill_context = bill_data is not None and any(
+        keyword in query.lower() for keyword in [
+            "bill", "provider", "usage", "plan", "cancellation", "reliant", "txu", "green mountain", "constellation", "shell energy"]
+    )
 
-    if st.button("Get Insights", key="get_insights_btn") and query:
-        if not groq_api_key:
-            st.error(
-                "Groq API key not found. Please set GROQ_API_KEY in your .env file.")
-            return
-
+    if st.button("Get Insights") and query:
         try:
-            if use_log_context:
-                sample_logs = logs_df.head(10).to_dict(orient='records')
-                log_context = f"""
-                The following smart meter logs have been uploaded:
-                {json.dumps(sample_logs, indent=2)}
-                Use this log context to answer the user's question.
+            if use_bill_context:
+                provider = bill_data.get("provider")
+                location = bill_data.get("location")
+                terms = bill_data.get("terms_conditions")
+                billing_summary = bill_data.get("billing_summary")
+                bill_prompt = f"""
+                A user uploaded a utility bill. Below are the extracted details:
+                Provider: {provider}
+                Location: {location}
+                Terms: {terms}
+                Billing Summary: {billing_summary}
+                Question: {query}
                 """
-                final_prompt = f"{log_context}\nUser Question: {query}"
+                response = llm_rag.invoke(bill_prompt)
 
-                with st.spinner("Analyzing uploaded logs..."):
-                    chat_completion = client.chat.completions.create(
-                        messages=[
-                            {"role": "user", "content": final_prompt.strip()}],
-                        model="llama3-70b-8192"
-                    )
-                    response = chat_completion.choices[0].message.content.strip(
-                    )
+            elif logs_df is not None and not logs_df.empty:
+                logs_preview = logs_df.head(10).to_dict(orient="records")
+                log_prompt = f"""
+                The following smart meter logs have been uploaded:
+                {json.dumps(logs_preview, indent=2)}
+                Question: {query}
+                """
+                response = llm_rag.invoke(log_prompt)
 
             else:
-                with st.spinner("Retrieving case study insights..."):
-                    response = qa_chain.run(query)
+                rag_qa = RetrievalQA.from_chain_type(
+                    llm=llm_rag, retriever=Chroma(persist_directory=os.path.abspath("../db"), embedding_function=embedding_function).as_retriever())
+                response = rag_qa.run(query)
 
             st.success("Response:")
             st.write(response)
 
-            fallback_keywords = [
-                "i don't know", "not mentioned", "don't know", "unclear", "insufficient information",
-                "not enough information", "no relevant context", "couldn't find", "don't have enough information",
-                "based on the provided context", "cannot determine", "lack of data", "no data available",
-                "cannot find relevant info", "not specified"
-            ]
-            if any(keyword in response.lower() for keyword in fallback_keywords):
-                st.warning("We couldn't find a detailed answer. Explore more:")
-                suggestions = [
-                    "[Smart Meter Tampering Explained](https://www.smart-energy.com/?s=Energy+theft+smart+meters&ctg=60)",
-                    "[Energy Theft Detection Techniques](https://www.sciencedirect.com/search?qs=energy%20theft%20detection)",
-                    "[How AI Detects Energy Theft](https://venturebeat.com)"
-                ]
-                for link in suggestions:
-                    st.markdown(f"🔗 {link}")
-
-                search_link = f"https://www.google.com/search?q={query.replace(' ', '+')}"
-                st.markdown(f"🔍 [Search this topic online]({search_link})")
+            st.download_button(
+                "📄 Download Response as Report",
+                data=f"GridWatch AI Chat Response\n\nQuery: {query}\n\nResponse:\n{response}",
+                file_name="GridWatchAI_Chat_Report.txt",
+                mime="text/plain"
+            )
 
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"Error during chat response: {str(e)}")
 
     if logs_df is not None and not logs_df.empty:
-        st.markdown("---")
-        if st.button("📊 Visualize Logs", key="visualize_btn_chat"):
+        if st.button("📊 Visualize Logs"):
             st.session_state["active_tab"] = "Visualize Metrics"
+            st.session_state["upload_type"] = "Utility Bill" if bill_data else "Smart Meter Log"
             st.rerun()

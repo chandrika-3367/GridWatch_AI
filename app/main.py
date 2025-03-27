@@ -68,6 +68,9 @@ if 'log_context_available' not in st.session_state:
 with st.sidebar:
     st.image("/Users/chandrikajallipalli/Desktop/GridWatch_AI/gridwatch_logo.png.png",
              width=150)
+    st.markdown(
+        "GridWatch AI — A Multi-Modal AI Agent for Smart Meter and Utility Bill Analysis.")
+
     st.markdown("---")
     st.markdown("Switch between GridWatch AI features:")
 
