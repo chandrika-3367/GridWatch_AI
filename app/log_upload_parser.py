@@ -19,6 +19,17 @@ def preview_log_content(content, label):
     st.text_area(f"{label} Preview", content, height=300)
 
 
+def extract_text_from_pdf(uploaded_file):
+    """Extract text from a PDF file"""
+    try:
+        with fitz.open(stream=uploaded_file.getvalue(), filetype="pdf") as doc:
+            text = "\n".join(page.get_text("text") for page in doc)
+        return text
+    except Exception as e:
+        st.error(f"Error extracting text from PDF: {str(e)}")
+        return ""
+
+
 def robust_parse_text_to_df(text):
     records = []
     lines = text.strip().splitlines()
@@ -159,31 +170,34 @@ def analyze_log_content(df):
 
     st.session_state["analyzed_df"] = df
 
-    if 'action' not in st.session_state:
-        st.session_state.action = None
+    if "action" not in st.session_state:
+        st.session_state["action"] = None
 
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
-        if st.button("Preview"):
+        if st.button("📄 Preview Data"):
             st.session_state.action = 'preview'
+            st.rerun()
 
     with col2:
-        if st.button("Analyze"):
+        if st.button("📊 Analyze Data"):
             st.session_state.action = 'analyze'
+            st.rerun()
 
     with col3:
-        if st.button("Summarize"):
+        if st.button("📜 Summarize Logs"):
             st.session_state.action = 'summarize'
+            st.rerun()
 
     with col4:
-        if st.button("Ask GridWatchAI"):
+        if st.button("💬 Ask GridWatch AI"):
             st.session_state['log_context_available'] = True
             st.session_state['active_tab'] = "Chat with GridWatch AI"
             st.rerun()
 
     with col5:
-        if st.button("Visualize"):
+        if st.button("📉 Visualize Metrics"):
             st.session_state['active_tab'] = "Visualize Metrics"
             st.rerun()
 
@@ -209,9 +223,13 @@ def analyze_log_content(df):
 
 
 def log_upload_tab():
-    st.subheader("Upload Logs for Analysis")
-    uploaded_files = st.file_uploader("Choose log files", type=[
-                                      "txt", "csv", "json", "log", "pdf", "docx"], accept_multiple_files=True)
+    st.subheader("📂 Upload Logs for Analysis")
+
+    uploaded_files = st.file_uploader(
+        "Choose log files",
+        type=["txt", "csv", "json", "log", "pdf", "docx"],
+        accept_multiple_files=True
+    )
 
     if not uploaded_files:
         return
@@ -227,18 +245,14 @@ def log_upload_tab():
                 df = pd.read_csv(uploaded_file)
             elif file_type == "json":
                 raw = uploaded_file.read().decode("utf-8")
-                try:
-                    df = pd.read_json(raw)
-                except:
-                    data = [json.loads(line) for line in raw.strip().split(
-                        '\n') if line.strip()]
-                    df = pd.DataFrame(data)
+                df = pd.read_json(raw)
             elif file_type in ["txt", "log"]:
                 content = uploaded_file.read().decode("utf-8")
                 df = robust_parse_text_to_df(content)
                 if df is None or df.empty:
                     df = fallback_llm_parse(content)
             elif file_type == "pdf":
+                st.session_state.uploaded_bill = uploaded_file
                 with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
                     text = "\n".join(page.get_text().strip() for page in doc)
                 df = robust_parse_text_to_df(text)
@@ -246,9 +260,8 @@ def log_upload_tab():
                     df = fallback_llm_parse(text)
             elif file_type == "docx":
                 docx_file = Document(uploaded_file)
-                paragraphs = [para.text.strip()
-                              for para in docx_file.paragraphs if para.text.strip()]
-                text = "\n".join(paragraphs)
+                text = "\n".join(para.text.strip()
+                                 for para in docx_file.paragraphs if para.text.strip())
                 df = robust_parse_text_to_df(text)
                 if df is None or df.empty:
                     df = fallback_llm_parse(text)
