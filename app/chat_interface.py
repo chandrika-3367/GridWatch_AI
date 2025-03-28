@@ -202,7 +202,9 @@ def chat_tab():
                 response = llm_rag.invoke(log_prompt).content.strip()
 
             else:
-                response = qa_chain.run(query)
+                rag_qa = RetrievalQA.from_chain_type(
+                    llm=llm_rag, retriever=Chroma(persist_directory=os.path.abspath("../db"), embedding_function=embedding_function).as_retriever())
+                response = rag_qa.run(query)
 
                 # Fallback: Provide external resources if AI can't generate a confident response
                 fallback_keywords = [
