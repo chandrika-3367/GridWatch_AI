@@ -7,6 +7,7 @@ import uuid
 import requests
 
 
+# Simulated the mock ML model
 def run_ml_detection(df):
     df['ML_Fraud_Score'] = np.random.rand(len(df))
     threshold = 0.7
@@ -76,14 +77,19 @@ def fraud_detection_tab():
     st.subheader(":robot_face: AI-Based Fraud Detection")
 
     df = st.session_state.get("analyzed_df")
+
+# Fallback logic: Set upload_type from data type if not explicitly set
+    if "upload_type" not in st.session_state or not st.session_state["upload_type"]:
+        if df is not None and not df.empty:
+            if {"Meter_ID", "Energy_Consumed_kWh", "Voltage_V"}.issubset(df.columns):
+                st.session_state["upload_type"] = "Smart Meter Log"
+            else:
+                st.session_state["upload_type"] = "Utility Bill"
+
     upload_type = st.session_state.get("upload_type")
 
     if df is None or df.empty:
         st.warning("No data available for fraud analysis.")
-        return
-
-    if upload_type == "Utility Bill":
-        st.info("This feature is currently designed for smart meter logs. Please switch to Visualize tab for utility bill insights.")
         return
 
     df, fraud_count, confidence = run_ml_detection(df)

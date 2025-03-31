@@ -126,36 +126,28 @@ def fallback_llm_parse(text):
 
 
 def visualize_tab():
-    st.subheader("\U0001F4CA Metrics Visualization")
+
+    st.subheader("Metrics Visualization")
 
     df = st.session_state.get('analyzed_df')
     upload_type = st.session_state.get('upload_type')
 
-    # If data exists (redirected), skip upload
-    if df is not None and not df.empty:
-        st.info("Visualizing previously uploaded data.")
-    else:
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Upload Utility Bill"):
-                st.session_state['upload_type'] = "Utility Bill"
-        with col2:
-            if st.button("Upload Smart Meter Log"):
-                st.session_state['upload_type'] = "Smart Meter Log"
+    # Always show upload section in Visualize tab (fix disappearing uploader)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Upload Utility Bill"):
+            st.session_state['upload_type'] = "Utility Bill"
+    with col2:
+        if st.button("Upload Smart Meter Log"):
+            st.session_state['upload_type'] = "Smart Meter Log"
 
-        upload_type = st.session_state.get('upload_type')
+    upload_type = st.session_state.get('upload_type')
 
-        if not upload_type:
-            st.info("Please select the data type before uploading.")
-            return
+    uploaded_files = st.file_uploader("Upload file(s)", type=[
+        "txt", "csv", "json", "log", "pdf", "docx"], accept_multiple_files=True)
 
-        uploaded_files = st.file_uploader("Upload file(s)", type=[
-                                          "txt", "csv", "json", "log", "pdf", "docx"], accept_multiple_files=True)
-
-        if not uploaded_files:
-            return
-
-        all_data = []
+    all_data = []
+    if uploaded_files:
         for uploaded_file in uploaded_files:
             file_type = uploaded_file.name.split(".")[-1].lower()
             try:
@@ -203,14 +195,22 @@ def visualize_tab():
 
         df = pd.concat(all_data, ignore_index=True)
         st.session_state['analyzed_df'] = df.copy()
+        st.success("Files processed and data is ready for visualization!")
 
-    # Proceed to visualization
+    # Refresh reference to session_state df
+    df = st.session_state.get('analyzed_df')
+    if df is None or df.empty:
+        st.info("Please upload files above to begin visualization.")
+        return
+
+    # Proceed to visualizations
     available_kpis = [
         col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
     if not available_kpis:
         st.warning("No numeric KPIs available for visualization.")
         return
 
+    # Selecting the KPIs
     st.markdown("### Select KPI and Meter")
     selected_kpi = st.selectbox(
         "Select KPI to visualize:", options=available_kpis)
@@ -224,6 +224,7 @@ def visualize_tab():
     kpi_min = float(filtered_df[selected_kpi].min())
     kpi_max = float(filtered_df[selected_kpi].max())
 
+    # Selecting the threshold
     if kpi_min == kpi_max:
         st.info(
             f"All values for {selected_kpi} are {kpi_min}. Threshold slider disabled.")
@@ -234,6 +235,7 @@ def visualize_tab():
 
     filtered_df['Anomaly'] = filtered_df[selected_kpi] > threshold
 
+    # Line Plot over the time
     if 'Timestamp' in filtered_df.columns:
         try:
             filtered_df['Timestamp'] = pd.to_datetime(
@@ -246,11 +248,13 @@ def visualize_tab():
         except Exception as e:
             st.warning(f"Timestamp parsing failed: {str(e)}")
 
+    # Shows KPI distribution per meter box plot
     st.markdown(f"### Box Plot for {selected_kpi}")
     fig_box = px.box(filtered_df, x='Meter_ID', y=selected_kpi,
                      title=f"Box Plot of {selected_kpi} by Meter")
     st.plotly_chart(fig_box, use_container_width=True)
 
+    # Shows Trends over time for utility bills and Selected KPI histogram for smart meter logs
     if upload_type == "Utility Bill":
         if 'Billing_Period' in filtered_df.columns:
             filtered_df['Billing_Period'] = filtered_df['Billing_Period'].astype(
@@ -266,6 +270,7 @@ def visualize_tab():
                                 title=f"Distribution of {selected_kpi}", color_discrete_sequence=['steelblue'])
         st.plotly_chart(fig_hist, use_container_width=True)
 
+    # Bar chart for average selected KPI per meter
     st.markdown(f"### Average {selected_kpi} per Meter")
     try:
         avg_per_meter = filtered_df.groupby(
@@ -283,6 +288,7 @@ def visualize_tab():
     else:
         st.success("No anomalies detected above threshold.")
 
+    # Geo Map fraud distribution with mock coordinates
     if 'Meter_ID' in filtered_df.columns:
         st.markdown("### Fraud Distribution Map (Mock Data)")
         meter_geo = pd.DataFrame({
@@ -296,11 +302,14 @@ def visualize_tab():
                                     zoom=5, mapbox_style='carto-positron', title="Fraud Distribution Map (Mock Coordinates)")
         st.plotly_chart(fig_map, use_container_width=True)
 
+    # Button to download the report as csv
+
     st.markdown("---")
     csv = df.to_csv(index=False)
     st.download_button(label="Download CSV Report", data=csv,
                        file_name="GridWatch_Report.csv", mime="text/csv")
 
+    # Button for generating the ticket for fraud report
     if st.button("\U0001F6A8 Report Fraud / Generate Ticket"):
         if not anomalies.empty:
             sample_records = anomalies.head(1).copy()
@@ -326,14 +335,14 @@ def visualize_tab():
                         f"\u2705 Ticket #{ticket_id} created successfully! Your fraud report has been logged.")
                     st.json(ticket)
                     ack_text = f"""
-GridWatch AI - Fraud Report Acknowledgment
-Ticket ID: {ticket_id}
-Issue: {ticket['issue']}
-Affected Meters: {', '.join(ticket['affected_meters'])}
-Timestamp: {ticket['sample_timestamp']}
-Note: {ticket['sample_note']}
-Status: Logged
-"""
+                    GridWatch AI - Fraud Report Acknowledgment
+                    Ticket ID: {ticket_id}
+                    Issue: {ticket['issue']}
+                    Affected Meters: {', '.join(ticket['affected_meters'])}
+                    Timestamp: {ticket['sample_timestamp']}
+                    Note: {ticket['sample_note']}
+                    Status: Logged
+                    """
                     st.download_button("\U0001F4C4 Download Acknowledgment", data=ack_text,
                                        file_name=f"FraudTicket_{ticket_id}.txt", mime="text/plain")
                 else:
@@ -344,6 +353,7 @@ Status: Logged
         else:
             st.info("No anomalies to report.")
 
+    # Detect fraud using ML
     if st.button("\U0001F916 Detect Fraud Using AI"):
         st.session_state['active_tab'] = "AI-Based Detection"
         st.rerun()

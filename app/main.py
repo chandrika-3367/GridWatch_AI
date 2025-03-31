@@ -98,7 +98,8 @@ elif selected_tab == "AI-Based Detection":
     if df is not None and not df.empty:
         fraud_detection_tab()
     else:
-        st.info("Please upload and analyze logs in the 'Upload Logs' tab first.")
+        st.info(
+            "Please upload and analyze logs in the 'Upload Logs' or 'Visualize Metrics' tab first.")
 
 elif selected_tab == "Chat with GridWatch AI":
     logs_df = st.session_state.get("analyzed_df")
