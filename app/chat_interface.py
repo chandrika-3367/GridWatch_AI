@@ -111,7 +111,7 @@ def extract_provider_and_location(pdf_texts):
         try:
             combined_text = "\n\n---\n\n".join(pdf_texts)
             fallback_prompt = f"""
-            Extract only the utility provider and billing location from this bill text.
+            Extract only the utility provider and billing location from all the uploaded bill texts.
 
             Return your output in valid JSON like this:
             {{
