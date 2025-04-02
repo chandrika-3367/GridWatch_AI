@@ -1,0 +1,35 @@
+# Streamlit web app
+streamlit==1.32.2            # UI framework for the GridWatch AI dashboard
+
+# Data wrangling
+pandas==2.2.1                 # Handling tabular data and log files
+numpy==1.26.4                 # Numeric operations (used in ML scoring, thresholds)
+
+# Interactive visualizations
+plotly==5.20.0                # For rendering time series, box plots, maps, etc.
+
+# Document parsing
+python-docx==1.1.0            # Parse DOCX utility bills
+PyMuPDF==1.23.22              # PDF parsing (extract text from uploaded bills)
+
+# HTTP requests & system utils
+requests==2.31.0              # Posting fraud tickets to mock API
+uuid==1.30                    # Generating unique ticket IDs
+python-dotenv==1.0.1          # Load environment variables (API keys)
+
+# LLM Orchestration & RAG
+langchain==0.1.14             # Base LangChain framework
+langchain-community==0.0.29   # For ChromaDB, PyPDFLoader, etc.
+langchain-openai==0.1.6       # For LLM usage with Groq’s OpenAI-compatible API
+
+#Embeddings and Vector Store
+sentence-transformers==2.6.1  # For HuggingFace embedding model: all-MiniLM-L6-v2
+chromadb==0.4.24              # Vector DB to persist embedded chunks
+huggingface-hub==0.22.2       # For fetching HuggingFace models (embeddings)
+
+#Nice-to-haves
+tqdm==4.66.2                  # Progress bars (optional, can help with embedding)
+scikit-learn==1.4.1.post1     # ML ops (not heavily used now, but good to have)
+
+# Optional: might already be available, but useful to list explicitly
+# fitz included with PyMuPDF above
