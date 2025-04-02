@@ -101,7 +101,7 @@ GridWatch AI is **live and operational** with:
 
 ---
 ## **Enhancements that are coming up!**
-
+✅ **Making the GridWatchAI vertically scalable**.\
 ✅ **Smart Alert Thresholds** – **Proactively detect fraud and receive real-time energy alerts**.\
 ✅ **Energy Theft Heatmaps** – **Geospatial analysis of fraud-prone areas with predictive insights**.\
 ✅ **ML Training & Model Adaptation** – **Train models with uploaded datasets and dynamically adapt to different fraud patterns**.
