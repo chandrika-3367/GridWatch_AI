@@ -4,9 +4,6 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
-import sys
-import pysqlite3
-sys.modules["sqlite3"] = pysqlite3
 
 # Load environment variables
 load_dotenv()

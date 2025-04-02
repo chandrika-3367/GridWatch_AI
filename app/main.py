@@ -10,14 +10,6 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain_openai import ChatOpenAI
 
-
-try:
-    import pysqlite3
-    import sys
-    sys.modules["sqlite3"] = pysqlite3
-except ImportError:
-    pass
-
 # Load environment variables
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
