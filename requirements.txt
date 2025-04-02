@@ -1,35 +1,35 @@
-# Streamlit web app
-streamlit==1.32.2            # UI framework for the GridWatch AI dashboard
+# Core web framework
+streamlit==1.32.2            # UI framework for interactive dashboards
 
-# Data wrangling
-pandas==2.2.1                 # Handling tabular data and log files
-numpy==1.26.4                 # Numeric operations (used in ML scoring, thresholds)
+# Data handling
+pandas==2.2.1                 # For dataframes, analysis, and visualizations
+numpy==1.26.4                 # Used for numerical operations and ML scoring
+python-docx==1.1.0           # To extract text from .docx files
+python-dotenv==1.0.1         # For loading environment variables from .env
+uuid==1.30                   # To generate unique ticket IDs (UUID-based)
 
-# Interactive visualizations
-plotly==5.20.0                # For rendering time series, box plots, maps, etc.
+# PDF and document parsing
+PyMuPDF==1.23.24              # Used as 'fitz' for PDF text extraction
 
-# Document parsing
-python-docx==1.1.0            # Parse DOCX utility bills
-PyMuPDF==1.23.22              # PDF parsing (extract text from uploaded bills)
+# Visualization
+plotly==5.20.0                # For interactive charts and graphs
 
-# HTTP requests & system utils
-requests==2.31.0              # Posting fraud tickets to mock API
-uuid==1.30                    # Generating unique ticket IDs
-python-dotenv==1.0.1          # Load environment variables (API keys)
+# NLP / LLM & RAG
+langchain==0.1.16             # Base framework for chaining LLM and RAG components
+langchain-community==0.0.33  # For Chroma, PyPDFLoader, and HuggingFace embeddings
+langchain-openai==0.1.6       # For using Groq/OpenAI-compatible LLMs
+sentence-transformers==2.6.1 # Needed by HuggingFace Embeddings
+chromadb==0.4.24              # For persistent vector store (RAG memory)
+tiktoken==0.6.0              # Optional, helps with token counting for LLMs
 
-# LLM Orchestration & RAG
-langchain==0.1.14             # Base LangChain framework
-langchain-community==0.0.29   # For ChromaDB, PyPDFLoader, etc.
-langchain-openai==0.1.6       # For LLM usage with Groq’s OpenAI-compatible API
+# HTTP requests
+requests==2.31.0              # For fraud ticket API calls (mock API)
 
-#Embeddings and Vector Store
-sentence-transformers==2.6.1  # For HuggingFace embedding model: all-MiniLM-L6-v2
-chromadb==0.4.24              # Vector DB to persist embedded chunks
-huggingface-hub==0.22.2       # For fetching HuggingFace models (embeddings)
+# JSON manipulation & safe evaluation
+asttokens==2.4.1             # Required for ast.literal_eval parsing safety
 
-#Nice-to-haves
-tqdm==4.66.2                  # Progress bars (optional, can help with embedding)
-scikit-learn==1.4.1.post1     # ML ops (not heavily used now, but good to have)
+# Backend LLM calls
+groq==0.5.0                   # Python SDK to connect to Groq LLMs (llama3)
 
-# Optional: might already be available, but useful to list explicitly
-# fitz included with PyMuPDF above
+# Optional dev tools / static typing (safe fallback)
+typing-extensions==4.11.0    # For runtime type safety across modules
