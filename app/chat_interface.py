@@ -235,6 +235,8 @@ def chat_tab():
                 """
 
                 response = llm_rag.invoke(bill_prompt).content.strip()
+                st.success("Response:")
+                st.write(response)
 
             elif use_log_context:
                 logs_preview = logs_df.head(10).to_dict(orient="records")
@@ -258,6 +260,8 @@ def chat_tab():
                 """
 
                 response = llm_rag.invoke(log_prompt).content.strip()
+                st.success("Response:")
+                st.write(response)
 
             else:
 
@@ -293,6 +297,9 @@ def chat_tab():
 
                 # Run RAG
                 response = rag_qa.run(query)
+
+                st.success("Response:")
+                st.write(response)
 
                 # Fallback keyword patterns that signal weak/confused responses
                 fallback_keywords = [
@@ -350,9 +357,6 @@ def chat_tab():
 
                     search_link = f"https://www.google.com/search?q={query.replace(' ', '+')}"
                     st.markdown(f"🔍 [Search this topic online]({search_link})")
-
-            st.success("Response:")
-            st.write(response)
 
             st.download_button(
                 "📄 Download Response as Report",
