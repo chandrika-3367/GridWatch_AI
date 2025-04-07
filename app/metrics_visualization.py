@@ -16,6 +16,21 @@ import os
 load_dotenv()
 groq_api_key = os.getenv("GROQ_API_KEY")
 
+# Allowed Extensions
+ALLOWED_EXTENSIONS = {"txt", "csv", "json", "log", "pdf", "docx"}
+
+# Check the relenacy of the uploaded file
+
+
+def is_relevant_data(content: str) -> bool:
+    relevant_keywords = [
+        "account number", "billing period", "meter id", "energy consumed",
+        "kwh", "charges", "voltage", "current", "timestamp", "usage"
+    ]
+    content = content.lower()
+    return any(kw in content for kw in relevant_keywords)
+
+
 # Helper to parse logs manually with generalized logic
 
 
@@ -143,44 +158,101 @@ def visualize_tab():
 
     upload_type = st.session_state.get('upload_type')
 
-    uploaded_files = st.file_uploader("Upload file(s)", type=[
-        "txt", "csv", "json", "log", "pdf", "docx"], accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Upload file(s)", type=list(
+        ALLOWED_EXTENSIONS), accept_multiple_files=True)
 
     all_data = []
+
     if uploaded_files:
         for uploaded_file in uploaded_files:
             file_type = uploaded_file.name.split(".")[-1].lower()
+
+            if file_type not in ALLOWED_EXTENSIONS:
+                st.warning(f"Unsupported file type: .{file_type}")
+                continue
+
             try:
+                df = None
+
                 if file_type == "csv":
                     df = pd.read_csv(uploaded_file)
+                    if df.empty:
+                        st.warning(
+                            f"{uploaded_file.name} is empty. No data extracted.")
+                        continue
+                    if not is_relevant_data(df.to_string()):
+                        st.warning(
+                            f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                        continue
+
                 elif file_type == "json":
-                    raw = uploaded_file.read().decode("utf-8")
+                    raw = uploaded_file.read().decode("utf-8").strip()
+                    if not raw:
+                        st.warning(
+                            f"{uploaded_file.name} is empty. No data extracted.")
+                        continue
                     try:
                         df = pd.read_json(raw)
                     except:
-                        data = [json.loads(line) for line in raw.strip().split(
-                            '\n') if line.strip()]
-                        df = pd.DataFrame(data)
+                        try:
+                            data = [json.loads(line) for line in raw.strip().split(
+                                '\n') if line.strip()]
+                            df = pd.DataFrame(data)
+                        except:
+                            df = None
+                    if df is None or df.empty:
+                        st.warning(
+                            f"No data extracted from {uploaded_file.name}.")
+                        continue
+                    if not is_relevant_data(df.to_string()):
+                        st.warning(
+                            f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                        continue
+
                 elif file_type in ["txt", "log"]:
-                    content = uploaded_file.read().decode("utf-8")
+                    content = uploaded_file.read().decode("utf-8").strip()
+                    if not content:
+                        st.warning(
+                            f"{uploaded_file.name} is empty. No data extracted.")
+                        continue
+                    if not is_relevant_data(content):
+                        st.warning(
+                            f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                        continue
                     df = robust_parse_text_to_df(content)
                     if df is None or df.empty:
                         df = fallback_llm_parse(content)
+                    if df is None or df.empty:
+                        st.warning(
+                            f"No data extracted from {uploaded_file.name}.")
+                        continue
+
                 elif file_type in ["pdf", "docx"]:
+                    text = ""
                     if file_type == "pdf":
                         with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
                             text = "\n".join(page.get_text().strip()
                                              for page in doc)
                     else:
                         docx_file = Document(uploaded_file)
-                        text = "\n".join(
-                            para.text.strip() for para in docx_file.paragraphs if para.text.strip())
+                        text = "\n".join(para.text.strip()
+                                         for para in docx_file.paragraphs if para.text.strip())
+
+                    if not text.strip():
+                        st.warning(
+                            f"{uploaded_file.name} is empty. No data extracted.")
+                        continue
+                    if not is_relevant_data(text):
+                        st.warning(
+                            f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                        continue
                     df = robust_parse_text_to_df(text)
                     if df is None or df.empty:
                         df = fallback_llm_parse(text)
-                else:
-                    st.warning(f"Unsupported file type: {file_type}")
-                    continue
+                    if df is None or df.empty:
+                        st.warning(
+                            f"No data extracted from {uploaded_file.name}.")
+                        continue
 
                 if df is not None and not df.empty:
                     df['Source_File'] = uploaded_file.name

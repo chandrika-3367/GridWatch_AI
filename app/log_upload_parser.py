@@ -17,6 +17,18 @@ groq_api_key = os.getenv("GROQ_API_KEY")
 
 # Static KPIs
 DEFAULT_KPIS = ["Energy_Consumed_kWh", "Voltage_V", "Current_A"]
+ALLOWED_EXTENSIONS = {"txt", "csv", "json", "log", "pdf", "docx"}
+
+# Check the relenacy of the uploaded file
+
+
+def is_relevant_data(content: str) -> bool:
+    relevant_keywords = [
+        "account number", "billing period", "meter id", "energy consumed",
+        "kwh", "charges", "voltage", "current", "timestamp", "usage"
+    ]
+    content = content.lower()
+    return any(kw in content for kw in relevant_keywords)
 
 # Convert timestamp fields inside log dictionaries into ISO format
 
@@ -297,14 +309,13 @@ def log_upload_tab():
     st.subheader("Upload Logs for Analysis")
     uploaded_files = st.file_uploader(
         "Choose log files",
-        type=["txt", "csv", "json", "log", "pdf", "docx"],
+        type=list(ALLOWED_EXTENSIONS),
         accept_multiple_files=True
     )
 
     if not uploaded_files:
         return
 
-    # Clear stale bill data when new files are uploaded
     st.session_state["uploaded_bills"] = []
     st.session_state["provider_names"] = []
     st.session_state["billing_locations"] = []
@@ -313,14 +324,31 @@ def log_upload_tab():
 
     for uploaded_file in uploaded_files:
         file_type = uploaded_file.name.split(".")[-1].lower()
+
+        if file_type not in ALLOWED_EXTENSIONS:
+            st.warning(f"Unsupported file type: .{file_type}")
+            continue
+
         df = None
 
         try:
             if file_type == "csv":
                 df = pd.read_csv(uploaded_file)
+                if df.empty:
+                    st.warning(
+                        f"{uploaded_file.name} is empty. No data extracted.")
+                    continue
+                if not is_relevant_data(df.to_string()):
+                    st.warning(
+                        f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                    continue
 
             elif file_type == "json":
-                raw = uploaded_file.read().decode("utf-8")
+                raw = uploaded_file.read().decode("utf-8").strip()
+                if not raw:
+                    st.warning(
+                        f"{uploaded_file.name} is empty. No data extracted.")
+                    continue
                 try:
                     df = pd.read_json(raw)
                 except:
@@ -330,12 +358,30 @@ def log_upload_tab():
                         df = pd.DataFrame(data)
                     except:
                         df = fallback_llm_parse(raw)
+                if df is None or df.empty:
+                    st.warning(f"No data extracted from {uploaded_file.name}.")
+                    continue
+                if not is_relevant_data(df.to_string()):
+                    st.warning(
+                        f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                    continue
 
             elif file_type in ["txt", "log"]:
-                content = uploaded_file.read().decode("utf-8")
+                content = uploaded_file.read().decode("utf-8").strip()
+                if not content:
+                    st.warning(
+                        f"{uploaded_file.name} is empty. No data extracted.")
+                    continue
+                if not is_relevant_data(content):
+                    st.warning(
+                        f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                    continue
                 df = robust_parse_text_to_df(content)
                 if df is None or df.empty:
                     df = fallback_llm_parse(content)
+                if df is None or df.empty:
+                    st.warning(f"No data extracted from {uploaded_file.name}.")
+                    continue
 
             elif file_type == "pdf":
                 try:
@@ -345,16 +391,26 @@ def log_upload_tab():
                 except:
                     pdf_text = ""
 
-                if pdf_text:
-                    df = robust_parse_text_to_df(pdf_text)
-                    if df is None or df.empty:
-                        df = fallback_llm_parse(pdf_text)
+                if not pdf_text.strip():
+                    st.warning(
+                        f"{uploaded_file.name} is empty. No data extracted.")
+                    continue
+                if not is_relevant_data(pdf_text):
+                    st.warning(
+                        f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                    continue
+                df = robust_parse_text_to_df(pdf_text)
+                if df is None or df.empty:
+                    df = fallback_llm_parse(pdf_text)
+                if df is None or df.empty:
+                    st.warning(f"No data extracted from {uploaded_file.name}.")
+                    continue
 
-                # Always store current bills only (old ones are wiped above)
                 st.session_state["uploaded_bills"].append({
                     "name": uploaded_file.name,
                     "text": pdf_text
                 })
+
                 bill_texts = [bill["text"]
                               for bill in st.session_state.get("uploaded_bills", [])]
                 if bill_texts:
@@ -366,19 +422,41 @@ def log_upload_tab():
                     paragraphs = [para.text.strip()
                                   for para in docx_file.paragraphs if para.text.strip()]
                     text = "\n".join(paragraphs)
+                    if not text.strip():
+                        st.warning(
+                            f"{uploaded_file.name} is empty. No data extracted.")
+                        continue
+                    if not is_relevant_data(text):
+                        st.warning(
+                            f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                        continue
                     df = robust_parse_text_to_df(text)
                     if df is None or df.empty:
                         df = fallback_llm_parse(text)
+                    if df is None or df.empty:
+                        st.warning(
+                            f"No data extracted from {uploaded_file.name}.")
+                        continue
                 except:
-                    pass
+                    st.warning(
+                        f"Could not process DOCX file: {uploaded_file.name}")
+                    continue
 
         except:
             try:
                 uploaded_file.seek(0)
-                content = uploaded_file.read().decode("utf-8")
+                content = uploaded_file.read().decode("utf-8").strip()
+                if not content:
+                    st.warning(
+                        f"{uploaded_file.name} is empty. No data extracted.")
+                    continue
+                if not is_relevant_data(content):
+                    st.warning(
+                        f"{uploaded_file.name} doesn't appear to contain bill or log data. Skipping.")
+                    continue
                 df = fallback_llm_parse(content)
             except:
-                pass
+                continue
 
         if df is not None and not df.empty:
             all_data.append(df)
