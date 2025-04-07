@@ -159,7 +159,7 @@ def extract_provider_and_location(pdf_texts):
 
 def chat_tab():
     st.markdown("""
-    **Ask questions about energy theft, smart meter patterns, or recommendations from your utility bill.**
+    **Ask questions about energy anomalies, smart meter patterns, or recommendations from your utility bill.**
 
     _Example Queries:_
     - *What anomalies were detected in the uploaded logs?*
@@ -171,7 +171,7 @@ def chat_tab():
         st.info("Utility bills/logs uploaded. You can now ask questions.")
     else:
         st.info(
-            "Ask questions based on energy theft or upload logs/bills for specific insights.")
+            "Ask questions based on energy usage anamolies or upload logs/bills for specific insights.")
 
     query = st.text_input(
         "Ask GridWatch AI:", placeholder="e.g., How does smart meter fraud detection work?")
@@ -341,15 +341,15 @@ def chat_tab():
                     Try asking a question related to:
 
                     - Smart meter fraud patterns
-                    - Energy theft detection
+                    - Energy tampering detection
                     - Billing anomalies or usage discrepancies
                     - Utility provider comparisons based on uploaded bills
                     """)
 
                     suggestions = [
                         "[Smart Meter Tampering Explained](https://www.smart-energy.com/?s=Energy+theft+smart+meters&ctg=60)",
-                        "[Energy Theft Detection Techniques](https://www.sciencedirect.com/search?qs=energy%20theft%20detection)",
-                        "[How AI Detects Energy Theft](https://venturebeat.com)"
+                        "[Energy Tampering Detection Techniques](https://www.sciencedirect.com/search?qs=energy%20theft%20detection)",
+                        "[How AI Detects Energy anamolies](https://venturebeat.com)"
                     ]
 
                     for link in suggestions:

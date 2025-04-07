@@ -82,7 +82,7 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("GridWatch AI detects energy theft and anomalies in smart meter data using AI-powered analytics. Analyze logs, visualize trends, and uncover insights to ensure energy integrity and operational efficiency.")
+    st.markdown("GridWatch AI detects energy anomalies in smart meter data using AI-powered analytics. Analyze logs, visualize trends, and uncover insights to ensure energy integrity and operational efficiency.")
 
 st.session_state.active_tab = selected_tab
 
