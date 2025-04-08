@@ -36,8 +36,8 @@ qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
 
 # Streamlit UI Setup
 st.set_page_config(
-    page_title="GridWatch AI - Fraud Detection Chat", layout="wide")
-st.title("GridWatch AI - Smart Meter Fraud Detection")
+    page_title="GridWatch AI - Anamoly Detection Chat", layout="wide")
+st.title("GridWatch AI - Smart Meter Anamoly Detection")
 
 # Inject custom sidebar CSS for aesthetics
 st.markdown("""
